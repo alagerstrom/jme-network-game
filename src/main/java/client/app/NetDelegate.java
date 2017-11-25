@@ -56,18 +56,20 @@ public class NetDelegate implements NetHandler.Delegate<Message> {
 
     private void connect(){
 
-        for (int port = DEFAULT_PORT; port < PORT_UPPER_LIMIT; port++){
-            if (port == this.port)
-                continue;
-            try {
-                String host = "localhost";
-                netHandler.connectTo(host, port);
-                System.out.println("Connected to " + host + ":" + port);
-            } catch (IOException ignored) {
+        String[] hosts = {"localhost", "192.168.0.14"};
+        for (int i = 0; i < hosts.length; i++){
+            String host = hosts[i];
+            for (int port = DEFAULT_PORT; port < PORT_UPPER_LIMIT; port++){
+                if (port == this.port)
+                    continue;
+                try {
+                    netHandler.connectTo(host, port);
+                    System.out.println("Connected to " + host + ":" + port);
+                } catch (IOException ignored) {
 
+                }
             }
         }
-
 
 
     }
