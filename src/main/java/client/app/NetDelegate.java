@@ -60,7 +60,7 @@ public class NetDelegate implements NetHandler.Delegate<Message> {
         for (int i = 0; i < hosts.length; i++){
             String host = hosts[i];
             for (int port = DEFAULT_PORT; port < PORT_UPPER_LIMIT; port++){
-                if (port == this.port)
+                if (port == this.port && host.equals("localhost"))
                     continue;
                 try {
                     netHandler.connectTo(host, port);
