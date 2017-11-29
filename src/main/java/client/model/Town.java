@@ -16,21 +16,21 @@ import com.jme3.util.SkyFactory;
  * Created by andreas on 2016-10-28.
  */
 public class Town {
-    private Spatial sceneModel;
+//    private Spatial sceneModel;
     private RigidBodyControl landscape;
 
 
     public Town(AssetManager assetManager, ViewPort viewPort){
         assetManager.registerLocator("town.zip", ZipLocator.class);
-        sceneModel = assetManager.loadModel("main.scene");
-        sceneModel.setLocalScale(2f);
+//        sceneModel = assetManager.loadModel("main.scene");
+//        sceneModel.setLocalScale(2f);
 
         // We set up collision detection for the scene by creating a
         // compound collision shape and a static RigidBodyControl with mass zero.
-        CollisionShape sceneShape =
-                CollisionShapeFactory.createMeshShape(sceneModel);
-        landscape = new RigidBodyControl(sceneShape, 0);
-        sceneModel.addControl(landscape);
+//        CollisionShape sceneShape =
+//                CollisionShapeFactory.createMeshShape(sceneModel);
+//        landscape = new RigidBodyControl(sceneShape, 0);
+//        sceneModel.addControl(landscape);
 
         viewPort.setBackgroundColor(ColorRGBA.Black);
 
@@ -39,7 +39,7 @@ public class Town {
         node.attachChild(SkyFactory.createSky(
                 assetManager, "Textures/Sky/Bright/BrightSky.dds", false));
         assetManager.registerLocator("assets", FileLocator.class);
-        node.attachChild(sceneModel);
+//        node.attachChild(sceneModel);
     }
     public RigidBodyControl getLandscape(){
         return this.landscape;

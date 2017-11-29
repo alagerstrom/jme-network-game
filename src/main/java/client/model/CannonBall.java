@@ -49,7 +49,7 @@ public class CannonBall {
         ball_geo.setMaterial(stone_mat);
         this.node.attachChild(ball_geo);
         node.attachChild(this.node);
-        /** Position the cannon ball  */
+        /** BrickPosition the cannon ball  */
         ball_geo.setLocalTranslation(cam.getLocation());
         ball_geo.move(cam.getDirection().mult(5));
 //        ball_geo.move(new Vector3f(0,2,0));

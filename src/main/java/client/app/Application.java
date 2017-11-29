@@ -46,12 +46,13 @@ public class Application extends SimpleApplication {
         flyCam.setMoveSpeed(100);
         flyCam.setRotationSpeed(2f);
 
-        setUpTown();
         setUpLight();
         setUpPlayer();
         setUpPhysics();
+        setUpTown();
         setUpKeys();
         setUpCrossHairs();
+        setUpBricks();
         setUpAudio();
 //        setUpBricks();
         initSpawnPoints();
@@ -157,7 +158,6 @@ public class Application extends SimpleApplication {
 
     private void setUpBricks() {
         BrickMaker brickMaker = new BrickMaker(assetManager, physics.getBulletAppState(), bricks);
-        brickMaker.makeWall(10, 10, 10, 5, 5, 5);
         rootNode.attachChild(bricks);
 
     }
@@ -165,6 +165,7 @@ public class Application extends SimpleApplication {
     private void setUpTown() {
         town = new Town(assetManager, viewPort);
         town.addTown(assetManager, rootNode);
+//        physics.add(town.getLandscape());
     }
 
     private void setUpPlayer() {
@@ -179,7 +180,6 @@ public class Application extends SimpleApplication {
         physics = new Physics();
         AppState state = physics.getBulletAppState();
         stateManager.attach(state);
-        physics.add(town.getLandscape());
         physics.add(player.getPlayer());
 
     }

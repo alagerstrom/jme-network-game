@@ -69,6 +69,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.simsilica</groupId>
+            <artifactId>lemur</artifactId>
+            <version>1.10.1</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
             <groupId>${jme3_g}</groupId>
             <artifactId>jme3-core</artifactId>
             <version>${jme3_v}</version>
