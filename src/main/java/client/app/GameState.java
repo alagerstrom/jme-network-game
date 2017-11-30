@@ -1,18 +1,26 @@
 package client.app;
 
 import client.audio.AudioEngine;
+import com.jme3.app.Application;
+import com.jme3.app.FlyCamAppState;
 import com.jme3.app.SimpleApplication;
-import com.jme3.app.state.AppState;
+import com.jme3.app.state.AppStateManager;
+import com.jme3.app.state.BaseAppState;
+import com.jme3.asset.AssetManager;
+import com.jme3.bullet.BulletAppState;
 import com.jme3.collision.CollisionResults;
+import com.jme3.input.FlyByCamera;
+import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
+import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
 import client.model.*;
 
-import java.io.IOException;
 import java.nio.channels.CompletionHandler;
 import java.util.ArrayList;
 import java.util.Timer;
@@ -22,11 +30,10 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Created by andreas on 2016-10-28.
  */
-public class Application extends SimpleApplication {
+public class GameState extends BaseAppState {
     private Player player;
     private Town town;
     private UpdateLoop updateLoop = new UpdateLoop();
-    private Physics physics;
     private ArrayList<EvilGuy> evilGuys = new ArrayList<EvilGuy>();
     private Node shootables = new Node();
     private Node bricks = new Node();
@@ -39,29 +46,22 @@ public class Application extends SimpleApplication {
     private MapGraph mapGraph = new MapGraph();
     private NetDelegate netDelegate;
 
-    @Override
-    public void simpleInitApp() {
-        // We re-use the flyby camera for rotation, while positioning is handled by physics
-        viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-        flyCam.setMoveSpeed(100);
-        flyCam.setRotationSpeed(2f);
+    private AssetManager assetManager;
+    private SimpleApplication app;
+    private Node rootNode;
+    private AppStateManager stateManager;
+    private InputManager inputManager;
+    private ViewPort viewPort;
+    private BulletAppState physics;
 
-        setUpLight();
-        setUpPlayer();
-        setUpPhysics();
-        setUpTown();
-        setUpKeys();
-        setUpCrossHairs();
-        setUpBricks();
-        setUpAudio();
-//        setUpBricks();
-        initSpawnPoints();
-        rootNode.attachChild(shootables);
-
-        setUpNetDelegate();
-
-
-    }
+//    @Override
+//    public void simpleInitApp() {
+//
+//
+////
+//
+//
+//    }
 
     private void startSendingPositionUpdates() {
         new Timer().schedule(new TimerTask() {
@@ -73,6 +73,7 @@ public class Application extends SimpleApplication {
     }
 
     private void sendMyPosition() {
+        Camera cam = getApplication().getCamera();
         Message message = new Message()
                 .setLocation(player.getPlayer().getPhysicsLocation())
                 .setDirecion(cam.getDirection());
@@ -103,35 +104,19 @@ public class Application extends SimpleApplication {
 
     }
 
-
-    public void incomingMessage(Message message, String sender){
-
-        for (EvilGuy evilGuy : evilGuys){
-            if (evilGuy.getName().equals(sender)){
-                evilGuy.move(message.getLocation(), message.getDirecion());
-            }
-        }
+    public NetDelegate getNetDelegate(){
+        return this.netDelegate;
     }
 
-    @Override
-    public void simpleUpdate(float tpf) {
+    public void incomingMessage(Message message, String sender) {
 
-//        float playerX = player.getPlayer().getPhysicsLocation().getX();
-//        float playerY = player.getPlayer().getPhysicsLocation().getY();
-//        float playerZ = player.getPlayer().getPhysicsLocation().getZ();
-//        Vector3f playerView = cam.getDirection();
-////        System.out.println("Player view: " + playerView.getX() + " " + playerView.getY() + " " + playerView.getZ());
-//
-//        for (EvilGuy evilguy : evilGuys)
-//            evilguy.move(new Vector3f(playerX + 50, playerY, playerZ), playerView);
-        updateLoop.loop(cam, player);
-//        spawn();
-        if (isFiring && System.currentTimeMillis() - lastFireTime > 100) {
-            lastFireTime = System.currentTimeMillis();
-            AudioEngine.getInstance().playGunSound();
-            Application.this.fire();
-        }
-
+        getApplication().enqueue(()->{
+            for (EvilGuy evilGuy : evilGuys) {
+                if (evilGuy.getName().equals(sender)) {
+                    evilGuy.move(message.getLocation(), message.getDirecion());
+                }
+            }
+        });
     }
 
     private void initSpawnPoints() {
@@ -141,14 +126,13 @@ public class Application extends SimpleApplication {
     }
 
     private void createEvilGuy(int x, int y, int z, String name, WayPoint firstWayPoint) {
-        EvilGuy evilGuy = new EvilGuy(assetManager, physics.getBulletAppState(), shootables);
+        EvilGuy evilGuy = new EvilGuy(assetManager, physics, shootables);
         evilGuy.createEvilGuy(x, y, z, name, firstWayPoint);
         evilGuys.add(evilGuy);
     }
 
     protected void setUpCrossHairs() {
-        setDisplayStatView(false);
-        new CrossHairs().setUpCrossHairs(assetManager, guiFont, settings, guiNode);
+        app.setDisplayStatView(false);
     }
 
     private void setUpLight() {
@@ -157,7 +141,7 @@ public class Application extends SimpleApplication {
     }
 
     private void setUpBricks() {
-        BrickMaker brickMaker = new BrickMaker(assetManager, physics.getBulletAppState(), bricks);
+        BrickMaker brickMaker = new BrickMaker(assetManager, physics, bricks);
         rootNode.attachChild(bricks);
 
     }
@@ -177,15 +161,24 @@ public class Application extends SimpleApplication {
     }
 
     private void setUpPhysics() {
-        physics = new Physics();
-        AppState state = physics.getBulletAppState();
-        stateManager.attach(state);
-        physics.add(player.getPlayer());
+//        stateManager.attach(state);
+//        physics.add(player.getPlayer());
+//        physics.getPhysicsSpace().add(town.getLandscape());
+        physics.getPhysicsSpace().add(player.getPlayer());
 
     }
 
     private void setUpKeys() {
+        inputManager.deleteMapping(SimpleApplication.INPUT_MAPPING_EXIT);
+
         Keyboard keyboard = new Keyboard();
+        keyboard.addKey(new Key("Menu", KeyInput.KEY_ESCAPE, new KeyPressHandler() {
+            @Override
+            public void onPress(boolean isPressed) {
+                stateManager.getState(MenuState.class).setEnabled(true);
+                stateManager.getState(GameState.class).setEnabled(false);
+            }
+        }));
         keyboard.addKey(new Key("Left", KeyInput.KEY_A, new KeyPressHandler() {
             public void onPress(boolean isPressed) {
                 updateLoop.left(isPressed);
@@ -214,40 +207,41 @@ public class Application extends SimpleApplication {
         }));
         keyboard.addKey(new Key("Shoot", KeyInput.KEY_LCONTROL, new KeyPressHandler() {
             public void onPress(boolean isPressed) {
-                Application.this.isFiring = isPressed;
+                GameState.this.isFiring = isPressed;
             }
         }));
         keyboard.addMouseKey(new MouseKey("Shoot2", MouseInput.BUTTON_LEFT, new KeyPressHandler() {
             public void onPress(boolean isPressed) {
-                Application.this.isFiring = isPressed;
+                GameState.this.isFiring = isPressed;
             }
         }));
         keyboard.addKeysToInputManager(inputManager);
     }
 
     private void fire() {
-        CollisionResults results = new CollisionResults();
-        Ray ray = new Ray(cam.getLocation(), cam.getDirection());
-        shootables.collideWith(ray, results);
-        if (results.size() > 0) {
-            float dist = results.getClosestCollision().getDistance();
-            String hit = results.getClosestCollision().getGeometry().getParent().getName();
-            System.out.println("You shot " + hit + " at a distance of " + dist);
-            int index = -1;
-            for (EvilGuy evilGuy : evilGuys)
-                if (evilGuy.getName().equals(hit))
-                    index = evilGuys.indexOf(evilGuy);
-            if (index > -1) {
-                int damage = (int) (30 - (dist / 10));
-                if (damage < 0)
-                    damage = 0;
-                EvilGuy evilGuy = evilGuys.get(index);
-                if (evilGuy.damage(damage) == 0) {
-                    evilGuy.die();
-                    evilGuys.remove(evilGuy);
-                }
-            }
-        }
+//        CollisionResults results = new CollisionResults();
+//        Camera cam = getApplication().getCamera();
+//        Ray ray = new Ray(cam.getLocation(), cam.getDirection());
+//        shootables.collideWith(ray, results);
+//        if (results.size() > 0) {
+//            float dist = results.getClosestCollision().getDistance();
+//            String hit = results.getClosestCollision().getGeometry().getParent().getName();
+//            System.out.println("You shot " + hit + " at a distance of " + dist);
+//            int index = -1;
+//            for (EvilGuy evilGuy : evilGuys)
+//                if (evilGuy.getName().equals(hit))
+//                    index = evilGuys.indexOf(evilGuy);
+//            if (index > -1) {
+//                int damage = (int) (30 - (dist / 10));
+//                if (damage < 0)
+//                    damage = 0;
+//                EvilGuy evilGuy = evilGuys.get(index);
+//                if (evilGuy.damage(damage) == 0) {
+//                    evilGuy.die();
+//                    evilGuys.remove(evilGuy);
+//                }
+//            }
+//        }
     }
 
     private void spawn() {
@@ -289,5 +283,84 @@ public class Application extends SimpleApplication {
 
     public void newConnectedPlayer(String uniqueName) {
         createEvilGuy(spawnPoints.get(0).getX(), 5, spawnPoints.get(0).getZ(), uniqueName, spawnPoints.get(0).firstWayPoint);
+    }
+
+    @Override
+    protected void initialize(Application app) {
+
+//        super.initialize(stateManager, app);
+        this.app = (SimpleApplication) app; // can cast Application to something more specific
+        this.rootNode = this.app.getRootNode();
+        this.assetManager = this.app.getAssetManager();
+        this.stateManager = this.app.getStateManager();
+        this.inputManager = this.app.getInputManager();
+        this.viewPort = this.app.getViewPort();
+        this.physics = this.stateManager.getState(BulletAppState.class);
+
+        setUpLight();
+        setUpPlayer();
+        setUpTown();
+        setUpPhysics();
+        setUpCrossHairs();
+        setUpBricks();
+        setUpAudio();
+        initSpawnPoints();
+        Node rootNode = ((SimpleApplication) getApplication()).getRootNode();
+        rootNode.attachChild(shootables);
+
+        ((SimpleApplication) app).getCamera().setLocation(new Vector3f(-100,50,-100));
+        app.getCamera().lookAt(new Vector3f(0,0,0),new Vector3f(0,1,0));
+        ((SimpleApplication) app).getFlyByCamera().setRotationSpeed(0);
+        ((SimpleApplication) app).getFlyByCamera().setMoveSpeed(0);
+
+        setUpKeys();
+//
+        setUpNetDelegate();
+
+//
+
+    }
+
+    @Override
+    public void update(float tpf) {
+        super.update(tpf);
+        Camera cam = getApplication().getCamera();
+        if (isEnabled())
+            updateLoop.loop(cam, player);
+        if (isFiring && System.currentTimeMillis() - lastFireTime > 100) {
+            lastFireTime = System.currentTimeMillis();
+            AudioEngine.getInstance().playGunSound();
+            GameState.this.fire();
+
+        }
+    }
+
+    @Override
+    protected void cleanup(Application app) {
+
+    }
+
+    @Override
+    protected void onEnable() {
+//        We re-use the flyby camera for rotation, while positioning is handled by physics
+
+        stateManager.getState(FlyCamAppState.class).setEnabled(true);
+        FlyByCamera flyCam = this.app.getFlyByCamera();
+        viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
+        flyCam.setMoveSpeed(100);
+        flyCam.setRotationSpeed(2f);
+        flyCam.setEnabled(true);
+        flyCam.setDragToRotate(false);
+
+
+    }
+
+    @Override
+    protected void onDisable() {
+        stateManager.getState(FlyCamAppState.class).setEnabled(false);
+        FlyByCamera flyCam = this.app.getFlyByCamera();
+        flyCam.setMoveSpeed(0);
+        flyCam.setRotationSpeed(0);
+
     }
 }

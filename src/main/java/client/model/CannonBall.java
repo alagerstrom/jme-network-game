@@ -1,6 +1,6 @@
 package client.model;
 
-import client.app.Application;
+import client.app.GameState;
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingSphere;
@@ -27,11 +27,11 @@ public class CannonBall {
     private Camera cam;
     private Geometry ball_geo;
     private Node node = new Node("Cannonball");
-    private Application application;
+    private GameState gameState;
 
     public CannonBall(AssetManager assetManager, BulletAppState bulletAppState,
-                      Node node, Camera cam, Application application){
-        this.application = application;
+                      Node node, Camera cam, GameState gameState){
+        this.gameState = gameState;
         this.assetManager = assetManager;
         this.bulletAppState = bulletAppState;
         this.rootNode = node;
@@ -70,7 +70,7 @@ public class CannonBall {
             String name = closestCollision.getParent().getName();
 //            System.out.println("You hit " + name);
 //            closestCollision.getParent().removeFromParent();
-            application.kill(name);
+            gameState.kill(name);
 
         }
 

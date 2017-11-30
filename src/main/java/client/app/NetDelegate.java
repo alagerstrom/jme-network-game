@@ -3,18 +3,20 @@ package client.app;
 import net.NetHandler;
 
 import java.io.IOException;
+import java.nio.channels.CompletionHandler;
+import java.util.concurrent.CompletableFuture;
 
 public class NetDelegate implements NetHandler.Delegate<Message> {
 
     private NetHandler<Message> netHandler;
-    private Application application;
+    private GameState gameState;
     private final int port;
     private static final int DEFAULT_PORT = 3333;
     private static final int PORT_UPPER_LIMIT = 3343;
     private String uniqueName;
 
-    public NetDelegate(Application application) throws IOException {
-        this.application = application;
+    NetDelegate(GameState gameState) throws IOException {
+        this.gameState = gameState;
 
         int port = DEFAULT_PORT;
         int lastPort = PORT_UPPER_LIMIT;
@@ -34,12 +36,11 @@ public class NetDelegate implements NetHandler.Delegate<Message> {
         uniqueName = netHandler.getUniqueName();
         System.out.println("Me: " + uniqueName);
         System.out.println("Listening on port " + port);
-        connect();
     }
 
 
     public void onNewMessage(Message message, String sender) {
-        application.incomingMessage(message, sender);
+        gameState.incomingMessage(message, sender);
     }
 
     public void peerNotResponding(String uniqueName) {
@@ -50,28 +51,19 @@ public class NetDelegate implements NetHandler.Delegate<Message> {
     public void onNewConnection(String uniqueName) {
         if (!uniqueName.equals(this.uniqueName)){
             System.out.println("Player joined the game: " + uniqueName);
-            application.newConnectedPlayer(uniqueName);
+            gameState.newConnectedPlayer(uniqueName);
         }
     }
 
-    private void connect(){
-
-        String[] hosts = {"localhost", "192.168.0.14"};
-        for (int i = 0; i < hosts.length; i++){
-            String host = hosts[i];
-            for (int port = DEFAULT_PORT; port < PORT_UPPER_LIMIT; port++){
-                if (port == this.port && host.equals("localhost"))
-                    continue;
-                try {
-                    netHandler.connectTo(host, port);
-                    System.out.println("Connected to " + host + ":" + port);
-                } catch (IOException ignored) {
-
-                }
+    public void connectTo(String host, int port, CompletionHandler<Void, Void> completionHandler){
+        CompletableFuture.runAsync(()->{
+            try {
+                netHandler.connectTo(host, port);
+                completionHandler.completed(null,null);
+            } catch (IOException e) {
+                completionHandler.failed(e, null);
             }
-        }
-
-
+        });
     }
 
     public void send(Message message) {

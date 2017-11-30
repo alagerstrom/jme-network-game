@@ -1,16 +1,16 @@
 package client.controller;
 
-import client.app.Application;
+import client.app.GameState;
 
 /**
  * Created by andreas on 2016-10-28.
  */
 public class Controller {
-    private Application application;
+    private GameState gameState;
     public void createApplication(){
-        application = new Application();
+        gameState = new GameState();
     }
     public void startApplication(){
-        application.start();
+//        gameState.start();
     }
 }
