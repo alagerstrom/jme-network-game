@@ -9,7 +9,6 @@ import com.simsilica.lemur.Container;
 import com.simsilica.lemur.Label;
 import com.simsilica.lemur.TextField;
 
-import java.awt.*;
 import java.nio.channels.CompletionHandler;
 
 public class MenuState extends BaseAppState{
