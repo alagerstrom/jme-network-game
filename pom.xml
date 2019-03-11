@@ -56,7 +56,7 @@
 
     <properties>
         <jme3_g>org.jmonkeyengine</jme3_g>
-        <jme3_v>3.1.0-stable</jme3_v>
+        <jme3_v>3.2.0-stable</jme3_v>
     </properties>
 
     <repositories>
@@ -65,7 +65,6 @@
             <url>http://jcenter.bintray.com</url>
         </repository>
     </repositories>
-
 
     <dependencies>
         <dependency>
@@ -146,6 +145,14 @@
             <artifactId>jME3-testdata</artifactId>
             <version>3.0.0.20130526</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.simsilica/lemur -->
+        <dependency>
+            <groupId>com.simsilica</groupId>
+            <artifactId>lemur</artifactId>
+            <version>1.10.1</version>
+        </dependency>
+
 
     </dependencies>
 

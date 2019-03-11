@@ -26,6 +26,8 @@ public class App extends SimpleApplication {
         // components can find what they need.
         GuiGlobals.initialize(this);
 
+
+
         // Load the 'glass' style
         BaseStyles.loadGlassStyle();
 
